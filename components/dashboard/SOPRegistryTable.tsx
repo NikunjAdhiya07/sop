@@ -36,7 +36,7 @@ import {
 import { docxRequiredForLang, formatUploaded, pdfRequiredForLang } from "@/lib/sop-utils";
 import { compliancePercent, shouldShowComplianceScore } from "@/lib/registry-compliance";
 import { annexureRomanFromLabel } from "@/lib/sop-annexure-requirements";
-import { displaySopCode, displaySopTitle } from "@/lib/sop-display";
+import { displaySopCode, displaySopTitle, displaySopBaseCode, displaySopRevision } from "@/lib/sop-display";
 import { describeFilters } from "@/lib/filter-breadcrumb";
 import { useDashboardStore } from "@/lib/store/dashboard-store";
 import { Btn } from "./ui";
@@ -52,7 +52,7 @@ const registrySopNoTd = "px-1 py-1 align-middle whitespace-nowrap";
 
 /** Expand + data columns; +1 when the Actions column is shown. */
 function registryColCount(canMutate: boolean) {
-  return canMutate ? 18 : 17;
+  return canMutate ? 19 : 18;
 }
 
 function YesNoPill({ yes, yesLabel = "Yes", noLabel = "No" }: { yes: boolean; yesLabel?: string; noLabel?: string }) {
@@ -580,8 +580,9 @@ export function SOPRegistryTable({
             <colgroup>
               <col style={{ width: "1.5%" }} />
               <col style={{ width: "2%" }} />
-              <col style={{ width: "7%" }} />
-              <col style={{ width: canMutate ? "16%" : "18%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "3%" }} />
+              <col style={{ width: canMutate ? "15%" : "17%" }} />
               <col style={{ width: "4.5%" }} />
               <col style={{ width: canMutate ? "10%" : "11%" }} />
               <col style={{ width: "3.5%" }} />
@@ -604,6 +605,11 @@ export function SOPRegistryTable({
                 <th className={thBase}>
                   <button type="button" className={sortBtn} onClick={() => onSort("identifier")}>
                     SOP No <SortIcon field="identifier" />
+                  </button>
+                </th>
+                <th className={`${thBase} text-center`} title="Current revision number">
+                  <button type="button" className={`${sortBtn} justify-center`} onClick={() => onSort("version")}>
+                    Version <SortIcon field="version" />
                   </button>
                 </th>
                 <th className={thBase}>
@@ -911,8 +917,16 @@ const SOPRow = memo(function SOPRow({
         </td>
 
         {/* SOP No */}
-        <td className={`${registrySopNoTd} font-mono text-[13px] font-bold tracking-wider text-purple-700 group-hover:underline`}>
-          {displaySopCode(sop.identifier)}
+        <td
+          className={`${registrySopNoTd} font-mono text-[13px] font-bold tracking-wider text-purple-700 group-hover:underline`}
+          title={displaySopCode(sop.identifier)}
+        >
+          {displaySopBaseCode(sop.identifier)}
+        </td>
+
+        {/* Version */}
+        <td className={`${registrySopNoTd} text-center font-mono text-[12px] font-bold text-gray-700`}>
+          {displaySopRevision(sop.identifier, sop.version)}
         </td>
 
         {/* SOP Name */}

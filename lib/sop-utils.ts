@@ -27,6 +27,7 @@ import {
 import { nameFromFilename } from "@/lib/sop-filename";
 import {
   normalizeSopIdentifierKey,
+  parseRevisionFromSopIdentifier,
   sopFamilyCodesMatch,
   sopFamilyKeyFromIdentifier,
   sopIdentifierMatchFilter,
@@ -1245,6 +1246,32 @@ function deptOrderCompare(a: string, b: string): number {
   return ai - bi;
 }
 
+/**
+ * Natural order for SOP numbers: letter prefix, then document index numerically
+ * (so QAGE11-6 sorts before QAGE108-3), then revision.
+ */
+function identifierOrderCompare(a: string, b: string): number {
+  const parse = (id: string) => {
+    const nk = normalizeSopIdentifierKey(String(id || "").trim().toUpperCase());
+    const m = nk.match(/^([A-Z]{2,6})(\d+)(?:-(\d+))?$/);
+    return m
+      ? { prefix: m[1], doc: parseInt(m[2], 10), rev: m[3] ? parseInt(m[3], 10) : -1, raw: nk }
+      : { prefix: nk, doc: Number.POSITIVE_INFINITY, rev: -1, raw: nk };
+  };
+  const x = parse(a);
+  const y = parse(b);
+  if (x.prefix !== y.prefix) return x.prefix.localeCompare(y.prefix);
+  if (x.doc !== y.doc) return x.doc - y.doc;
+  if (x.rev !== y.rev) return x.rev - y.rev;
+  return x.raw.localeCompare(y.raw);
+}
+
+/** Revision shown in the registry's Version column: identifier suffix, else the stored version. */
+function registryRevisionNumber(sop: RegistrySOP): number {
+  const rev = parseRevisionFromSopIdentifier(sop.identifier);
+  return rev !== null ? rev : versionNumber(sop.version);
+}
+
 function sortRegistry(
   items: RegistrySOP[],
   sortBy = "department",
@@ -1260,12 +1287,14 @@ function sortRegistry(
         return compare(a.name.toLowerCase(), b.name.toLowerCase());
       case "department": {
         const deptCmp = deptOrderCompare(a.department, b.department) * dir;
-        return deptCmp !== 0 ? deptCmp : a.identifier.localeCompare(b.identifier);
+        return deptCmp !== 0 ? deptCmp : identifierOrderCompare(a.identifier, b.identifier);
       }
       case "location":
         return compare(a.location ?? "", b.location ?? "");
-      case "version":
-        return compare(parseFloat(a.version) || 0, parseFloat(b.version) || 0);
+      case "version": {
+        const revCmp = compare(registryRevisionNumber(a), registryRevisionNumber(b));
+        return revCmp !== 0 ? revCmp : identifierOrderCompare(a.identifier, b.identifier);
+      }
       case "expiryDate":
         return compare(a.expiryDate ?? "", b.expiryDate ?? "");
       case "language":
@@ -1282,7 +1311,7 @@ function sortRegistry(
       case "uploadedAt":
         return compare(a.uploadedAt, b.uploadedAt);
       default:
-        return compare(a.identifier, b.identifier);
+        return identifierOrderCompare(a.identifier, b.identifier) * dir;
     }
   });
 }
