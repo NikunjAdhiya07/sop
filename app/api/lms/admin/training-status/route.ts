@@ -14,6 +14,10 @@ function empKey(department: string, name: string): string {
   return `${department}||${name}`.trim().toLowerCase();
 }
 
+function stripVersion(code: string): string {
+  return String(code || '').toUpperCase().replace(/-\d+$/, '').trim();
+}
+
 // GET /api/lms/admin/training-status?department=QA
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -54,7 +58,9 @@ export async function GET(req: NextRequest) {
           const sop = String((p as { sopCode: string }).sopCode);
           const st  = String((p as { status: string }).status);
           if (!progressByEmp.has(id)) progressByEmp.set(id, new Set());
-          if (st === 'completed') progressByEmp.get(id)!.add(sop.toUpperCase());
+          // Base code (version suffix stripped): an assignment can carry a newer
+          // version than the one the employee actually sat the exam under.
+          if (st === 'completed') progressByEmp.get(id)!.add(stripVersion(sop));
           startedByEmp.set(id, (startedByEmp.get(id) ?? 0) + 1);
         }
 
@@ -72,7 +78,7 @@ export async function GET(req: NextRequest) {
 
           const totalSops     = assignments.length;
           const completedSops = assignments.filter(
-            (a) => completedSet.has(a.sopCode.toUpperCase()),
+            (a) => completedSet.has(stripVersion(a.sopCode)),
           ).length;
           const certCount = certsByEmp.get(id) ?? 0;
           const inProgress = startedByEmp.get(id) ?? 0;
