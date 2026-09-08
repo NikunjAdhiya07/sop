@@ -10,6 +10,8 @@ import {
   expandSopIdentifierVariants,
   formatSopCodeDisplay,
   normalizeSopIdentifierKey,
+  parseRevisionFromSopIdentifier,
+  sopBaseDisplayFromIdentifier,
 } from "@/lib/sopIdentifierNormalize";
 
 function stripRevisionSuffix(code: string): string {
@@ -38,6 +40,24 @@ export function displaySopCode(identifier: string): string {
   const trimmed = String(identifier || "").trim();
   if (!trimmed) return "";
   return formatSopCodeDisplay(trimmed);
+}
+
+/** SOP code without the revision suffix, for the registry's "SOP No" column (QAGE108-3 → QAGE108). */
+export function displaySopBaseCode(identifier: string): string {
+  const trimmed = String(identifier || "").trim();
+  if (!trimmed) return "";
+  return sopBaseDisplayFromIdentifier(trimmed) || displaySopCode(trimmed);
+}
+
+/**
+ * Revision suffix of an SOP code for the registry's "Version" column (QAGE108-3 → "3").
+ * Falls back to the record's stored version when the identifier carries no `-NN` suffix.
+ */
+export function displaySopRevision(identifier: string, fallbackVersion?: string): string {
+  const rev = parseRevisionFromSopIdentifier(identifier);
+  if (rev !== null) return String(rev);
+  const fallback = String(fallbackVersion || "").trim();
+  return fallback || "—";
 }
 
 /** SOP name with the leading SOP code stripped (e.g. "QCMI1-0 - Title" → "Title"). */
