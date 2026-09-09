@@ -7,15 +7,12 @@ import Employee from '@/models/Employee';
 import LearningProgress from '@/models/lms/LearningProgress';
 import Certificate from '@/models/lms/Certificate';
 import { getEmployeeAssignmentsMap } from '@/lib/employeeAssignments';
+import { stripVersion } from '@/lib/lmsExamScheduling';
 
 export const dynamic = 'force-dynamic';
 
 function empKey(department: string, name: string): string {
   return `${department}||${name}`.trim().toLowerCase();
-}
-
-function stripVersion(code: string): string {
-  return String(code || '').toUpperCase().replace(/-\d+$/, '').trim();
 }
 
 // GET /api/lms/admin/training-status?department=QA

@@ -3,7 +3,7 @@ import { connectDB } from '@/lib/mongodb';
 import { lmsCacheControl } from '@/lib/lmsCache';
 import { requireLmsTrainer } from '@/lib/lmsTrainerAuth';
 import SOP from '@/models/SOP';
-import { loadExamProgressMap } from '@/lib/lmsExamScheduling';
+import { loadExamProgressMap, stripVersion } from '@/lib/lmsExamScheduling';
 import { getEmployeeAssignmentsMap } from '@/lib/employeeAssignments';
 import {
   employeeAssignmentKey,
@@ -38,10 +38,6 @@ import type { ISOP } from '@/models/SOP';
 export const dynamic = 'force-dynamic';
 
 type SopStatus = 'completed' | 'not_completed';
-
-function stripVersion(code: string): string {
-  return String(code || '').toUpperCase().replace(/-\d+$/, '').trim();
-}
 
 export interface TrainerSopRow {
   sopCode: string;

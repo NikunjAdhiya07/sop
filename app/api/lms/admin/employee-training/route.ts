@@ -9,7 +9,7 @@ import TrainingMatrixUpload from '@/models/TrainingMatrixUpload';
 import { getEmployeeAssignmentsMap } from '@/lib/employeeAssignments';
 import { resolveTrainerDepartments } from '@/lib/employeeTrainer';
 import { getJourneyContentBatch } from '@/lib/lmsJourneyContent';
-import { loadExamProgressMap } from '@/lib/lmsExamScheduling';
+import { loadExamProgressMap, stripVersion } from '@/lib/lmsExamScheduling';
 import {
   hasGujaratiScript,
   isInvalidSopAssignmentCode,
@@ -49,10 +49,6 @@ function monthNameToNum(name: string): number | null {
     (m) => m && m.toLowerCase() === String(name || '').trim().toLowerCase(),
   );
   return idx > 0 ? idx : null;
-}
-
-function stripVersion(code: string): string {
-  return String(code || '').toUpperCase().replace(/-\d+$/, '').trim();
 }
 
 /**
