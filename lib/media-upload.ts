@@ -1,6 +1,13 @@
 import { connectDB } from "@/lib/mongodb";
 import SOP from "@/models/SOP";
-import { asMediaArray, extractIdentifierFromFilename } from "@/lib/sop-utils";
+import {
+  asMediaArray,
+  extractIdentifierFromFilename,
+  maxVersionInGroup,
+  recordsForVersion,
+  sopFamilyGroupKey,
+  sopFamilyIdentifierRegex,
+} from "@/lib/sop-utils";
 import { detectLanguageFromFilename, saveMediaFile } from "@/lib/upload";
 import { invalidateDashboardSopsCache } from "@/lib/server-cache";
 import { logSopAudit, snapshotSop } from "@/lib/audit-log";
@@ -17,8 +24,24 @@ function identifierRegex(identifier: string) {
   return new RegExp(`^${escaped}$`, "i");
 }
 
+/**
+ * Records media should attach to: the CURRENT version of the SOP family the file
+ * names. Media files are often named after the revision they were made for
+ * (QAGE02-08-Brief.mp4) while the registry has since moved to QAGE02-09; the
+ * registry and LMS only read the current version, so attaching to the named
+ * revision made the upload invisible.
+ */
 async function findSopGroup(identifier: string) {
-  return SOP.find({ identifier: identifierRegex(identifier) });
+  const exact = await SOP.find({ identifier: identifierRegex(identifier) });
+  const familyKey = sopFamilyGroupKey(exact[0] ?? { identifier });
+  const family = (
+    await SOP.find({
+      identifier: { $regex: sopFamilyIdentifierRegex(identifier) },
+      isObsolete: { $ne: true },
+    })
+  ).filter((r) => sopFamilyGroupKey(r) === familyKey);
+  if (!family.length) return exact;
+  return recordsForVersion(family, maxVersionInGroup(family));
 }
 
 function langKey(language: string): "en" | "gu" {
